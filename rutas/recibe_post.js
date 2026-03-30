@@ -8,29 +8,33 @@ const router = express.Router();
 module.exports = (clients, getClient) => {
   // Ruta para obtener el QR de una instancia vía POST
   router.post('/qr', (req, res) => {
-    const codigo = req.body.codigo;
-    
-    // Validar que el código sea de 8 dígitos
-    if (!codigo || !/^\d{8}$/.test(codigo)) {
-      return res.status(400).json({ error: "El código debe ser de 8 dígitos." });
-    }
-    
-    // Verificar si existe esa instancia
-    if (!clients[codigo]) {
-      // Si no existe, la creamos
-      getClient(codigo);
-      return res.status(202).json({ 
-        mensaje: "Instancia inicializándose. Intenta nuevamente en unos segundos." 
-      });
-    }
-    
-    // Devolver el QR si existe
-    if (clients[codigo].qr) {
-      res.json({ qr: clients[codigo].qr });
-    } else {
-      res.status(404).json({ 
-        error: "QR aún no generado. Por favor espere unos segundos y vuelva a intentarlo." 
-      });
+    try {
+      const codigo = req.body.codigo;
+
+      // Validar que el código sea de 8 dígitos
+      if (!codigo || !/^\d{8}$/.test(codigo)) {
+        return res.status(400).json({ error: "El código debe ser de 8 dígitos." });
+      }
+
+      // Verificar si existe esa instancia
+      if (!clients[codigo]) {
+        getClient(codigo);
+        return res.status(202).json({
+          mensaje: "Instancia inicializándose. Intenta nuevamente en unos segundos."
+        });
+      }
+
+      // Devolver el QR si existe
+      if (clients[codigo].qr) {
+        res.json({ qr: clients[codigo].qr });
+      } else {
+        res.status(404).json({
+          error: "QR aún no generado. Por favor espere unos segundos y vuelva a intentarlo."
+        });
+      }
+    } catch (err) {
+      console.error(`[POST /qr] Error:`, err);
+      res.status(500).json({ error: "Error interno al obtener el QR." });
     }
   });
 
